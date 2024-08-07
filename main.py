@@ -34,9 +34,8 @@ def in_battle() -> bool:
         if bar_nums > 0:
             print("In battle")
             print(bar_nums)
-            if bar_nums > 2:
+            if bar_nums > 1:
                 print("Double battle")
-            sleep(4)
             return True
     except pyscreeze.ImageNotFoundException:
         print("Not in battle, resuming search")
@@ -45,6 +44,13 @@ def in_battle() -> bool:
 def is_charmander() -> bool:
     try:
         pyautogui.locateOnScreen('images/charmander_name.png', confidence=0.8, grayscale=True)
+        return True
+    except pyautogui.ImageNotFoundException:
+        return False
+
+def is_ekans() -> bool:
+    try:
+        pyautogui.locateOnScreen('images/ekans_name.png', confidence=0.8, grayscale=True)
         return True
     except pyautogui.ImageNotFoundException:
         return False
@@ -72,28 +78,26 @@ def catch_pokemon():
     navigate_menu()
 
 def flee():
-    pydirectinput.press('down')
-    pydirectinput.press('right')
-    pydirectinput.press('space')
+    navigate_menu('main', 'exit')
     sleep(4)
     
 
-def navigate_menu():
-    for img in ("battle_itens", "pokeballs", "medicine", "berries"):
-        try:
-            print(f"Looking for {img}")
-            local = pyautogui.locateOnScreen('images/' + img + '.png', confidence=0.8)
-            print(f"{img} found at: {local}")
-            if img == "pokeballs" and local:
-                pydirectinput.press('space')
-            if img == "battle_itens":
-                pydirectinput.press('left')
-            if img == "medicine":
-                pydirectinput.press(['right', 'right'])
-            if img == "berries":
-                pydirectinput.press('right')
-        except pyautogui.ImageNotFoundException:
-            print(f"{img} not found")
+# def navigate_menu():
+#     for img in ("battle_itens", "pokeballs", "medicine", "berries"):
+#         try:
+#             print(f"Looking for {img}")
+#             local = pyautogui.locateOnScreen('images/' + img + '.png', confidence=0.8)
+#             print(f"{img} found at: {local}")
+#             if img == "pokeballs" and local:
+#                 pydirectinput.press('space')
+#             if img == "battle_itens":
+#                 pydirectinput.press('left')
+#             if img == "medicine":
+#                 pydirectinput.press(['right', 'right'])
+#             if img == "berries":
+#                 pydirectinput.press('right')
+#         except pyautogui.ImageNotFoundException:
+#             print(f"{img} not found")
 
 def lure_ended() -> bool:
     try:
@@ -116,7 +120,6 @@ if __name__ == "__main__":
                 continue
             else:
                 if in_battle():
-                    
                     if is_shiny():
                         print("Shiny found")
                         found_alert()
@@ -126,10 +129,13 @@ if __name__ == "__main__":
                         found_alert()
                         # catch_pokemon()
                     
-                        
+                    elif is_ekans():
+                        print("Ekans found, waiting intimidade animation to flee")
+                        sleep(12)
+                        flee()
                     else:
                         print("Not a Charmander, fleeing")
-                        sleep(2)
+                        sleep(6)
                         flee()
 
     except KeyboardInterrupt:
