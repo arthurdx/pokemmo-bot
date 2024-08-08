@@ -207,8 +207,12 @@ if __name__ == "__main__":
                     if is_shiny():
                         print("Shiny found")
                         found_alert()
-                        catch_pokemon()
+                        exit()
                     elif is_charmander():
+                        if num_enemies > 1:
+                            print("Double battle charmander, stopping")
+                            found_alert()
+                            exit()
                         print("Charmander found, catch")
                         catch_charmander()
                         sleep(14)
