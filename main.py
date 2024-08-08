@@ -27,7 +27,7 @@ def find_trainer() -> bool:
                 print("Trainer not found")
     return False
             
-def in_battle() -> bool:
+def in_battle() -> int:
     try:
         locations = list(pyautogui.locateAllOnScreen('images/hp_bar.png', confidence=0.8))
         bar_nums = round(len(locations)/12)
@@ -36,10 +36,11 @@ def in_battle() -> bool:
             print(bar_nums)
             if bar_nums > 1:
                 print("Double battle")
-            return True
+                return 2
+            return 1
     except pyscreeze.ImageNotFoundException:
         print("Not in battle, resuming search")
-    return False
+    return 0
     
 def is_charmander() -> bool:
     try:
@@ -62,26 +63,96 @@ def is_shiny() -> bool:
     except pyautogui.ImageNotFoundException:
         return False
     
+def is_male() -> bool:
+    for maleimg in ('day', 'night'):
+        try:
+            pyautogui.locateOnScreen('images/male_' + maleimg + '.png', confidence=0.8)
+            return True
+        except pyautogui.ImageNotFoundException:
+            pass
+    return False
+    
+def caught_pokemon() -> bool:
+    try:
+        pyautogui.locateOnScreen('images/caught.png', confidence=0.8)
+        return True
+    except pyautogui.ImageNotFoundException:
+        return False
+
 def catch_pokemon():
-    pydirectinput.press('space')
-    sleep(10)
-    pydirectinput.press('space')
-    sleep(0.2)
-    pydirectinput.press('right')
-    sleep(0.2)
-    pydirectinput.press('space')
     sleep(8)
-    pydirectinput.press('right')
-    sleep(0.2)
-    pydirectinput.press('space')
-    sleep(0.2)
-    navigate_menu()
+    navigate_menu('main', 'fight')
+    navigate_menu('fight', 'false_swipe')
+    sleep(11)
+    throw_pokeball()
+
+def throw_pokeball():
+    navigate_menu('main', 'bag')
+    navigate_menu('bag', 'pokeball')
 
 def flee():
     navigate_menu('main', 'exit')
     sleep(4)
-    
 
+def catch_charmander():
+    sleep(8)
+    navigate_menu('main', 'fight')
+    navigate_menu('fight', 'false_swipe')
+    sleep(12)
+    navigate_menu('main', 'fight')
+    navigate_menu('fight', 'spore')
+    sleep(15)
+    throw_pokeball()
+
+def throw_pokeball():
+    navigate_menu('main', 'bag')
+    navigate_menu('bag', 'pokeball')
+
+def flee():
+    navigate_menu('main', 'exit')
+    sleep(2)
+
+def check_ivs():
+    try:
+        location = pyautogui.locateOnScreen('images/ivs.png', confidence=0.8)
+        pyautogui.moveTo(pyautogui.center(location))
+        pyautogui.click()
+    except pyautogui.ImageNotFoundException:
+        print("IVs not found")
+    
+def has_31_iv():
+    try:
+        pyautogui.locateOnScreen('images/31_iv.png', confidence=0.9)
+        return True
+    except pyautogui.ImageNotFoundException:
+        return False
+    
+#pc 1 = 725, 417
+#pc 2 = 913, 417
+def release():
+    screen_width, screen_height = pyautogui.size()
+    screen_center = (screen_width / 2, screen_height / 2)
+    try:
+        locations = list(pyautogui.locateAllOnScreen('images/pc.png', confidence=0.8))
+        pcs_number = round(len(locations)/2)
+        print(f"PCs found: {pcs_number}")
+        if pcs_number == 1:
+            location = min(locations, key=lambda loc: ((loc.left + loc.width / 2 - screen_center[0]) ** 2 + (loc.top + loc.height / 2 - screen_center[1]) ** 2) ** 0.5)
+            pyautogui.moveTo(pyautogui.center(location))
+            pyautogui.click()
+            
+    except pyscreeze.ImageNotFoundException:
+        print("PC not found")
+    try:
+        location = pyautogui.locateOnScreen('images/release.png', confidence=0.8)
+        pyautogui.moveTo(pyautogui.center(location))
+        pyautogui.click()
+        sleep(0.8)
+        pydirectinput.press('up')
+        pydirectinput.press('z')
+    except pyautogui.ImageNotFoundException:
+        print("Release not found")
+    
 # def navigate_menu():
 #     for img in ("battle_itens", "pokeballs", "medicine", "berries"):
 #         try:
@@ -109,6 +180,18 @@ def lure_ended() -> bool:
 
 def search_encounter():
     pass
+
+def is_asleep() -> bool:
+    try:
+        pyautogui.locateOnScreen('images/asleep_status.png', confidence=0.8)
+        return True
+    except pyautogui.ImageNotFoundException:
+        return False
+    
+def use_spore():
+    navigate_menu('main', 'fight')
+    navigate_menu('fight', 'spore')
+    sleep(15)
     
 if __name__ == "__main__":
     sleep(2)
@@ -119,22 +202,47 @@ if __name__ == "__main__":
             if find_trainer():
                 continue
             else:
-                if in_battle():
+                num_enemies = in_battle()
+                if num_enemies > 0:
                     if is_shiny():
                         print("Shiny found")
                         found_alert()
-                        # catch_pokemon()
+                        catch_pokemon()
                     elif is_charmander():
-                        print("Charmander found")
-                        found_alert()
-                        # catch_pokemon()
-                    
-                    elif is_ekans():
-                        print("Ekans found, waiting intimidade animation to flee")
-                        sleep(12)
-                        flee()
+                        print("Charmander found, catch")
+                        catch_charmander()
+                        sleep(14)
+                        while not caught_pokemon():
+                            throw_pokeball()
+                            sleep(14)
+                            if not is_asleep():
+                                use_spore()
+
+                        pydirectinput.press('esc')
+                    elif is_male() and num_enemies < 2:
+                        print("found male breeder, catch")
+                        if is_ekans():
+                            sleep(8)
+                        catch_pokemon()
+                        sleep(14)
+                        while not caught_pokemon():
+                            throw_pokeball()
+                            sleep(14)
+                        check_ivs()
+                        sleep(2)
+                        if has_31_iv():
+                            print("Keeping")
+                            sleep(2)
+                            pydirectinput.press('esc')
+                        else:
+                            print("Releasing")
+                            sleep(2)
+                            release()
+                            
                     else:
-                        print("Not a Charmander, fleeing")
+                        if is_ekans():
+                            sleep(8)
+                        print("undesired pokemon, fleeing")
                         sleep(6)
                         flee()
 
